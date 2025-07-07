@@ -1,0 +1,204 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "Capi.Management",
+    "version": "1.0"
+  },
+  "paths": {
+    "/apis": {
+      "post": {
+        "tags": [
+          "Capi.Management"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Capi.Management"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Api"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/apis/{id}/policies": {
+      "put": {
+        "tags": [
+          "Capi.Management"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/apis/{id}": {
+      "delete": {
+        "tags": [
+          "Capi.Management"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Api": {
+        "required": [
+          "methods",
+          "name",
+          "route",
+          "upstreamUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "route": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "upstreamUrl": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Policy"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApiCreateDto": {
+        "required": [
+          "methods",
+          "name",
+          "route",
+          "upstreamUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "route": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "upstreamUrl": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Policy": {
+        "required": [
+          "configuration",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "configuration": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "apiId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "api": {
+            "$ref": "#/components/schemas/Api"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

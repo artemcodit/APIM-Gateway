@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # Kong Database (PostgreSQL)
+  kong-db:
+    image: postgres:9.6
+    container_name: kong-db
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_DB=kong
+      - POSTGRES_PASSWORD=kong
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kong"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - kong-net
+
+  # Kong Gateway
+  kong-migration:
+    image: kong:latest
+    container_name: kong-migration
+    command: "kong migrations bootstrap"
+    depends_on:
+      kong-db:
+        condition: service_healthy
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-db
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kong
+    networks:
+      - kong-net
+    restart: on-failure
+
+  kong:
+    image: kong:latest
+    container_name: kong
+    depends_on:
+      kong-migration:
+        condition: service_completed_successfully
+    command: "kong start"
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-db
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kong
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
+    ports:
+      - "8000:8000" # Kong Proxy
+      - "8443:8443" # Kong Proxy SSL
+      - "8001:8001" # Kong Admin API
+      - "8444:8444" # Kong Admin API SSL
+    networks:
+      - kong-net
+
+  # Redis Cache
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - kong-net
+
+  # Azure SQL Edge
+  sql-edge:
+    image: mcr.microsoft.com/azure-sql-edge
+    container_name: sql-edge
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=yourStrong(!)Password123
+    ports:
+      - "1433:1433"
+    networks:
+      - kong-net
+
+networks:
+  kong-net:
+    driver: bridge
