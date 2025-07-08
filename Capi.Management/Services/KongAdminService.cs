@@ -1,3 +1,4 @@
+using Capi.Management.Dtos;
 using Capi.Management.Models;
 using System.Text;
 using System.Text.Json;
@@ -31,17 +32,79 @@ namespace Capi.Management.Services
         {
             var kongAdminUrl = _configuration["Kong:AdminUrl"];
 
-            // Create or update service in Kong
-            var service = new { name = api.Name, url = api.UpstreamUrl };
-            var serviceJson = new StringContent(JsonSerializer.Serialize(service), Encoding.UTF8, "application/json");
-            // Use PUT to create or update the service idempotently
-            await _client.PutAsync($"{kongAdminUrl}/services/{api.Name}", serviceJson);
+            // 1. Create or Update the Service (this is idempotent)
+            var servicePayload = new { name = api.Name, url = api.UpstreamUrl, tags = api.Tags };
+            var serviceJson = new StringContent(JsonSerializer.Serialize(servicePayload), Encoding.UTF8, "application/json");
+            var serviceResponse = await _client.PutAsync($"{kongAdminUrl}/services/{api.Name}", serviceJson);
+            serviceResponse.EnsureSuccessStatusCode();
 
-            // Create or update route in Kong
-            var route = new { name = api.Name, paths = new[] { api.Route }, methods = api.Methods };
-            var routeJson = new StringContent(JsonSerializer.Serialize(route), Encoding.UTF8, "application/json");
-            // Use PUT to create or update the route idempotently
-            await _client.PutAsync($"{kongAdminUrl}/services/{api.Name}/routes/{api.Name}", routeJson);
+            // 2. Check if the Route exists
+            var getRouteResponse = await _client.GetAsync($"{kongAdminUrl}/services/{api.Name}/routes/{api.Name}");
+
+            var routePayload = new
+            {
+                name = api.Name,
+                paths = new[] { api.Route },
+                methods = api.Methods,
+                hosts = api.Hosts,
+                tags = api.Tags
+            };
+            var routeJson = new StringContent(JsonSerializer.Serialize(routePayload), Encoding.UTF8, "application/json");
+            HttpResponseMessage routeResponse;
+
+            if (getRouteResponse.IsSuccessStatusCode)
+            {
+                // 3a. If Route exists, update it with PATCH
+                routeResponse = await _client.PatchAsync($"{kongAdminUrl}/routes/{api.Name}", routeJson);
+            }
+            else if (getRouteResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // 3b. If Route does not exist, create it with POST
+                routeResponse = await _client.PostAsync($"{kongAdminUrl}/services/{api.Name}/routes", routeJson);
+            }
+            else
+            {
+                // Handle other potential errors from the GET request
+                getRouteResponse.EnsureSuccessStatusCode();
+                return; 
+            }
+            
+            routeResponse.EnsureSuccessStatusCode();
+
+            // 4. Enable or disable the API by adding/removing the request-termination plugin
+            await HandleApiEnabling(api, kongAdminUrl);
+        }
+
+        private async Task HandleApiEnabling(Api api, string kongAdminUrl)
+        {
+            // First, find if the plugin is already attached to the route
+            var pluginsResponse = await _client.GetAsync($"{kongAdminUrl}/routes/{api.Name}/plugins");
+            if (!pluginsResponse.IsSuccessStatusCode) return;
+
+            var pluginsStream = await pluginsResponse.Content.ReadAsStreamAsync();
+            var plugins = await JsonSerializer.DeserializeAsync<JsonElement>(pluginsStream);
+
+            var requestTerminationPlugin = plugins.GetProperty("data").EnumerateArray()
+                .FirstOrDefault(p => p.GetProperty("name").GetString() == "request-termination");
+
+            var pluginId = requestTerminationPlugin.ValueKind != JsonValueKind.Undefined ? requestTerminationPlugin.GetProperty("id").GetString() : null;
+
+            if (api.IsEnabled && pluginId != null)
+            {
+                // API is enabled, so delete the plugin if it exists
+                await _client.DeleteAsync($"{kongAdminUrl}/routes/{api.Name}/plugins/{pluginId}");
+            }
+            else if (!api.IsEnabled && pluginId == null)
+            {
+                // API is disabled, so add the plugin if it doesn't exist
+                var pluginPayload = new
+                {
+                    name = "request-termination",
+                    config = new { status_code = 503, message = "API is disabled" }
+                };
+                var pluginJson = new StringContent(JsonSerializer.Serialize(pluginPayload), Encoding.UTF8, "application/json");
+                await _client.PostAsync($"{kongAdminUrl}/routes/{api.Name}/plugins", pluginJson);
+            }
         }
 
         

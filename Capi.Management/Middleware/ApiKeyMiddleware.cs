@@ -21,6 +21,13 @@ namespace Capi.Management.Middleware
         // This method is invoked for each HTTP request.
         public async Task InvokeAsync(HttpContext context, IConfiguration configuration)
         {
+            // Allow requests to Swagger UI without an API key in development
+            if (context.Request.Path.StartsWithSegments("/swagger"))
+            {
+                await _next(context);
+                return;
+            }
+
             // Try to get the API key from the request headers.
             if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
             {
@@ -32,6 +39,7 @@ namespace Capi.Management.Middleware
 
             // Get the configured API key from the application's configuration (appsettings.json).
             var apiKey = configuration.GetValue<string>("ApiKey");
+
             // Check if the configured API key is null or if it doesn't match the extracted API key.
             if (apiKey == null || !apiKey.Equals(extractedApiKey))
             {

@@ -43,6 +43,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 // Register the ApiService and its interface for dependency injection.
 builder.Services.AddScoped<IApiService, ApiService>();
+builder.Services.AddScoped<IApiProductService, ApiProductService>();
 // Register the KongAdminService and configure its HttpClient.
 builder.Services.AddHttpClient<IKongAdminService, KongAdminService>(client =>
 {
@@ -72,6 +73,8 @@ builder.Services.AddEndpointsApiExplorer();
 // Add Swagger generation services.
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddControllers();
+
 // Build the web application.
 var app = builder.Build();
 
@@ -91,6 +94,8 @@ app.UseSerilogRequestLogging();
 // Add the API key middleware to the pipeline for request authentication.
 app.UseMiddleware<ApiKeyMiddleware>();
 
+app.MapControllers();
+
 // Map the health check endpoint to /healthz.
 app.MapHealthChecks("/healthz", new HealthCheckOptions
 {
@@ -98,40 +103,6 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
     Predicate = _ => true,
     // Use a custom response writer for a more detailed health check UI.
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-});
-
-// Map the POST /apis endpoint to create a new API.
-app.MapPost("/apis", async (ApiCreateDto apiCreateDto, IApiService apiService) =>
-{
-    // Call the ApiService to create the API.
-    var api = await apiService.CreateApiAsync(apiCreateDto);
-    // Return a 201 Created response with the created API.
-    return Results.Created($"/apis/{api.Id}", api);
-});
-
-// Map the GET /apis endpoint to retrieve all APIs.
-app.MapGet("/apis", async (IApiService apiService) =>
-{
-    // Call the ApiService to get all APIs.
-    return await apiService.GetApisAsync();
-});
-
-// Map the PUT /apis/{id}/policies endpoint to update policies for an API.
-app.MapPut("/apis/{id}/policies", async (Guid id, IEnumerable<PolicyDto> policyDtos, IApiService apiService) =>
-{
-    // Call the ApiService to update the API policies.
-    await apiService.UpdateApiPoliciesAsync(id, policyDtos);
-    // Return a 204 No Content response.
-    return Results.NoContent();
-});
-
-// Map the DELETE /apis/{id} endpoint to delete an API.
-app.MapDelete("/apis/{id}", async (Guid id, IApiService apiService) =>
-{
-    // Call the ApiService to delete the API.
-    await apiService.DeleteApiAsync(id);
-    // Return a 204 No Content response.
-    return Results.NoContent();
 });
 
 // Run the application.

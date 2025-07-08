@@ -8,10 +8,22 @@ const Sidebar: React.FC = () => {
       <nav>
         <ul>
           <li className="mb-4">
+            <Link to="/" className="hover:text-gray-300">Home</Link>
+          </li>
+          <li className="mb-4">
             <Link to="/dashboard" className="hover:text-gray-300">Dashboard</Link>
           </li>
-          <li>
+          <li className="mb-4">
+            <Link to="/apis" className="hover:text-gray-300">API List</Link>
+          </li>
+          <li className="mb-4">
+            <Link to="/api-products" className="hover:text-gray-300">API Products</Link>
+          </li>
+          <li className="mb-4">
             <Link to="/apis/create" className="hover:text-gray-300">Create API</Link>
+          </li>
+          <li>
+            <Link to="/api-products/create" className="hover:text-gray-300">Create API Product</Link>
           </li>
         </ul>
       </nav>

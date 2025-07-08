@@ -15,6 +15,8 @@ namespace Capi.Management.Data
          /// Gets or sets the DbSet for APIs.
         public DbSet<Api> Apis { get; set; }
 
+        public DbSet<ApiProduct> ApiProducts { get; set; }
+
          /// Gets or sets the DbSet for Policies.
         public DbSet<Policy> Policies { get; set; }
 
@@ -27,6 +29,11 @@ namespace Capi.Management.Data
                 .HasMany(a => a.Policies)
                 .WithOne(p => p.Api)
                 .HasForeignKey(p => p.ApiId);
+
+            modelBuilder.Entity<Api>()
+                .HasMany(a => a.ApiProducts)
+                .WithMany(p => p.Apis)
+                .UsingEntity(j => j.ToTable("ApiApiProduct"));
         }
     }
 }

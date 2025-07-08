@@ -20,10 +20,19 @@ namespace Capi.Management.Models
         [Required]
         [StringLength(500)]
         public string UpstreamUrl { get; set; } = string.Empty;
-        // The HTTP methods supported by the API. It is a required list of strings.
-        [Required]
+        // The HTTP methods supported by the API.
         public List<string> Methods { get; set; } = new List<string>();
-        // The list of policies associated with the API.
-        public List<Policy> Policies { get; set; } = new List<Policy>();
+        // The hosts for the API.
+        public List<string> Hosts { get; set; } = new List<string>();
+        // The tags for grouping the API.
+        public List<string> Tags { get; set; } = new List<string>();
+        // The OpenAPI specification for the API.
+        public string? OpenApiSpec { get; set; }
+        // Indicates whether the API is enabled.
+        public bool IsEnabled { get; set; } = true;
+        // The policies associated with the API.
+        public ICollection<Policy> Policies { get; set; } = new List<Policy>();
+        // Navigation property for the many-to-many relationship
+        public virtual ICollection<ApiProduct> ApiProducts { get; set; } = new List<ApiProduct>();
     }
 }

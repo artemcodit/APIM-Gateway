@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Capi.Management")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c620af56648a17c3086ce91c4c1abb719a93acc1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0147d804291630a828d3eb5b5bc90d360299d2e7")]
 [assembly: System.Reflection.AssemblyProductAttribute("Capi.Management")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Capi.Management")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
